@@ -1,5 +1,9 @@
-const SUPABASE_URL = "PASTE_YOUR_SUPABASE_PROJECT_URL";
-const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_PUBLIC_KEY";
+// Step 1: Paste your Supabase project settings here.
+// You can find them in Supabase Dashboard > Project Settings > Data API / API Keys.
+const SUPABASE_URL = "https://jeauektrfibjtjymhssc.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImplYXVla3RyZmlianRqeW1oc3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxMzQzMTgsImV4cCI6MjA5NTcxMDMxOH0.Hyk2sb_u13gF8eN99l0giHDwoh3FoWpqOl3c7qOf9pQ";
+
+// Step 2: This must match your Supabase table name.
 const TABLE_NAME = "profiles";
 
 const form = document.querySelector("#profileForm");
@@ -9,6 +13,7 @@ const buttonText = submitButton.querySelector(".button-text");
 
 const clientReady =
   SUPABASE_URL.startsWith("https://") &&
+  SUPABASE_ANON_KEY !== "PASTE_YOUR_SUPABASE_ANON_PUBLIC_KEY" &&
   SUPABASE_ANON_KEY.length > 20;
 
 const supabaseClient = clientReady
@@ -22,40 +27,46 @@ function showMessage(text, type = "") {
 
 function setLoading(isLoading) {
   submitButton.disabled = isLoading;
-  buttonText.textContent = isLoading ? "資料傳送中..." : "送出報名";
+  buttonText.textContent = isLoading ? "Submitting..." : "Submit Registration";
+}
+
+function getRegistrationData() {
+  return {
+    name: form.name.value.trim(),
+    gmail: form.gmail.value.trim().toLowerCase(),
+    gender: form.gender.value,
+  };
 }
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   if (!supabaseClient) {
-    showMessage("請先在 js/app.js 填入 Supabase URL 和 anon key。", "error");
+    showMessage("Please paste your Supabase URL and anon key in js/app.js first.", "error");
     return;
   }
 
-  const name = form.name.value.trim();
-  const gmail = form.gmail.value.trim().toLowerCase();
-  const gender = form.gender.value;
+  const registration = getRegistrationData();
 
-  if (!gmail.endsWith("@gmail.com")) {
-    showMessage("請輸入有效的 Gmail 地址。", "error");
+  if (!registration.gmail.endsWith("@gmail.com")) {
+    showMessage("Please enter a valid Gmail address.", "error");
     return;
   }
 
   setLoading(true);
-  showMessage("正在建立你的展覽入場資料...");
+  showMessage("Sending registration to Supabase...");
 
   const { error } = await supabaseClient
     .from(TABLE_NAME)
-    .insert([{ name, gmail, gender }]);
+    .insert([registration]);
 
   setLoading(false);
 
   if (error) {
-    showMessage(`送出失敗：${error.message}`, "error");
+    showMessage(`Submit failed: ${error.message}`, "error");
     return;
   }
 
   form.reset();
-  showMessage("報名成功，展場見！", "success");
+  showMessage("Registration saved successfully.", "success");
 });
